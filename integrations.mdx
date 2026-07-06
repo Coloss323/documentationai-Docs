@@ -1,0 +1,191 @@
+---
+title: Integrations
+description: Connect C3 Access to your pharmacy systems and third-party tools for seamless workflows.
+---
+
+## Overview
+
+C3 Access integrates with popular pharmacy management systems (PMS), webhooks, and APIs to automate compliance workflows. Connect your systems to sync patient data, prescription records, and compliance status in real time. This guide covers common integrations and custom setups.
+
+<Callout kind="info">
+  All integrations require a valid API key from your C3 Access dashboard at `https://dashboard.example.com`.
+</Callout>
+
+<Columns cols={2}>
+  <Card title="Pharmacy PMS" icon="database" href="#pharmacy-pms">
+    Sync with QS/1, PioneerRx, and other systems for automated compliance checks.
+  </Card>
+  <Card title="Webhooks" icon="zap" href="#webhooks">
+    Receive real-time notifications for compliance events.
+  </Card>
+  <Card title="REST API" icon="code" href="#api-endpoints">
+    Build custom integrations using our API endpoints.
+  </Card>
+  <Card title="Custom Guides" icon="settings" href="#custom-integrations">
+    Advanced setups and troubleshooting.
+  </Card>
+</Columns>
+
+## Pharmacy Management Systems
+
+Connect C3 Access to your PMS for seamless data flow. Use the following guides for popular systems.
+
+<Tabs>
+  <Tab title="QS/1" icon="terminal">
+    QS/1 users can sync prescription data via SFTP or API polling.
+
+    <Steps>
+      <Step title="Generate API Key" icon="key">
+        Log in to QS/1 admin and navigate to Integrations > API Keys.
+      </Step>
+      <Step title="Configure Endpoint" icon="settings">
+        Set webhook URL to `https://api.example.com/v1/pms/qs1/webhook`.
+      </Step>
+      <Step title="Test Sync" icon="play">
+        Send a test prescription payload.
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="PioneerRx" icon="database">
+    PioneerRx supports direct API integration.
+
+    <ParamField path="patientId" param-type="string" required="true">
+      Unique patient identifier from PioneerRx.
+    </ParamField>
+
+    <ParamField query="complianceType" param-type="string" required="false">
+      Type of check, e.g., `dea-schedule`.
+    </ParamField>
+  </Tab>
+</Tabs>
+
+## Webhooks
+
+Set up webhooks to receive instant updates on compliance status changes, such as prescription approvals or audit flags.
+
+### Setup Steps
+
+<Steps>
+  <Step title="Create Webhook" icon="plus">
+    In your C3 Access dashboard, go to Integrations > Webhooks > New Webhook.
+  </Step>
+  <Step title="Add Endpoint URL" icon="link">
+    Enter your server URL, e.g., `https://your-pharmacy-server.com/webhook`.
+  </Step>
+  <Step title="Verify and Activate" icon="check-circle">
+    C3 Access sends a verification challenge. Respond with HTTP 200.
+  </Step>
+</Steps>
+
+### Webhook Payload Example
+
+<CodeGroup tabs="JavaScript,Python">
+  ```javascript
+  app.post('/webhook', (req, res) => {
+    const { event, data } = req.body;
+    if (event === 'compliance.updated') {
+      console.log(`Patient ${data.patientId} status: ${data.status}`);
+    }
+    res.status(200).send('OK');
+  });
+  ```
+  ```python
+  from flask import Flask, request
+
+  app = Flask(__name__)
+
+  @app.route('/webhook', methods=['POST'])
+  def webhook():
+      data = request.json
+      event = data['event']
+      if event == 'compliance.updated':
+          print(f"Patient {data['data']['patientId']} status: {data['data']['status']}")
+      return 'OK', 200
+  ```
+</CodeGroup>
+
+## API Endpoints Overview
+
+Use our REST API for programmatic access. Base URL: `https://api.example.com/v1`.
+
+<Request tabs="cURL,JavaScript" show-lines="true">
+  ```bash
+  curl -X POST https://api.example.com/v1/compliance/verify \
+    -H "Authorization: Bearer YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "patientId": "12345",
+      "prescription": {
+        "drug": "oxycodone",
+        "quantity": 30
+      }
+    }'
+  ```
+  ```javascript
+  const response = await fetch('https://api.example.com/v1/compliance/verify', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer YOUR_API_KEY',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      patientId: '12345',
+      prescription: {
+        drug: 'oxycodone',
+        quantity: 30
+      }
+    })
+  });
+  ```
+</Request>
+
+<Response tabs="200,400">
+  ```json
+  {
+    "status": "approved",
+    "patientId": "12345",
+    "restrictions": [],
+    "verifiedAt": "2024-01-15T10:30:00Z"
+  }
+  ```
+  ```json
+  {
+    "error": "invalid_drug_schedule",
+    "details": "DEA Schedule II requires special handling"
+  }
+  ```
+</Response>
+
+<ResponseField name="status" field-type="string" required="true">
+  Compliance decision: `approved`, `rejected`, or `pending`.
+</ResponseField>
+
+## Custom Integrations
+
+For bespoke needs, follow these guidelines.
+
+<Expandable title="Integration Flow" default-open="true">
+  ```mermaid
+  sequenceDiagram
+      PharmacyPMS->>C3Access: Send Prescription Data
+      C3Access->>PharmacyPMS: Compliance Response
+      Note over C3Access: Run Checks
+      C3Access->>Webhook: Notify Endpoint
+  ```
+</Expandable>
+
+<Board title="Integration Roadmap">
+  <BoardColumn title="Planned" color="0" icon="circle">
+    <BoardCard title="DocuTrack Integration" description="Sync dispensing records" dueDate="2025-03-15" />
+  </BoardColumn>
+  <BoardColumn title="In Progress" color="1" icon="loader">
+    <BoardCard title="Rx30 Support" description="API polling for legacy systems" author="Dev Team" />
+  </BoardColumn>
+  <BoardColumn title="Live" color="2" icon="check-circle">
+    <BoardCard title="Webhook v2" description="Batch events support" createdAt="2024-12-01" />
+  </BoardColumn>
+</Board>
+
+<Callout kind="tip">
+  Need help? Contact support@C3Access.com with your integration details.
+</Callout>
